@@ -2,12 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
-import Signin from './GoogleSingin/Signin';
+import TodoList from './Input_word/TodoList';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <Signin />
+    <TodoList />
   </React.StrictMode>
 );
 
