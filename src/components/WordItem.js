@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import '../styles/WordItem.css';
 
 function WordItem(props) {
 
     return (
-        <div>
+        <div> 
             <div>
                 <div>
                     <h6>

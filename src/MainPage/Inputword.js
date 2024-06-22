@@ -9,14 +9,20 @@ function Inputword() {
     const [inputCategory, setInputCategory] = useState('');
     const [type, setType] = useState('word'); // Default type set to 'word'
     const [wordList, setWordList] = useState([]);
-    const [categories, setCategories] = useState(['일상', '비행', '격식표현']); // 예시로 초기 카테고리 목록을 설정
+    const [categories, setCategories] = useState(['일상', '비행', '격식표현', '기타']); // 기본 카테고리 목록에 '기타' 추가
 
     const addItem = () => {
+        // 입력값 검증
+        if (!inputWord || !inputMeaning) {
+            alert('영어와 뜻은 필수 입력 항목입니다.');
+            return;
+        }
+
         const newItem = {
             word: inputWord,
             meaning: inputMeaning,
             hint: inputHint,
-            category: inputCategory,
+            category: inputCategory || '기타', // 카테고리가 입력되지 않으면 기본값으로 '기타' 설정
             type: type
         };
         setWordList([...wordList, newItem]);
@@ -40,7 +46,6 @@ function Inputword() {
     return (
         <div>
             <div>
-
                 <div className="radio-group" style={{ marginTop: '10px' }}>
                     <label>
                         <input
@@ -61,7 +66,7 @@ function Inputword() {
                     </label>
                 </div>
 
-                <div  style={{ marginTop: '10px' }}>
+                <div style={{ marginTop: '10px' }}>
                     <label>영어</label>
                     <input
                         value={inputWord}
@@ -110,7 +115,6 @@ function Inputword() {
                     </ul>
                 </div>
 
-            
                 <button onClick={addItem}>추가</button>
 
                 <WordBoard wordList={wordList} setWordList={setWordList} />
