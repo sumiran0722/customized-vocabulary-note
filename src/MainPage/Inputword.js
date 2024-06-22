@@ -6,26 +6,62 @@ function Inputword() {
     const [inputWord, setInputWord] = useState('');
     const [inputMeaning, setInputMeaning] = useState('');
     const [inputHint, setInputHint] = useState('');
+    const [inputCategory, setInputCategory] = useState('');
     const [type, setType] = useState('word'); // Default type set to 'word'
-    const [wordList, setWordList] = useState([]); // State variable should be named `wordList`
+    const [wordList, setWordList] = useState([]);
+    const [categories, setCategories] = useState(['일상', '비행', '격식표현']); // 예시로 초기 카테고리 목록을 설정
 
     const addItem = () => {
         const newItem = {
             word: inputWord,
             meaning: inputMeaning,
-            hint : inputHint,
+            hint: inputHint,
+            category: inputCategory,
             type: type
         };
         setWordList([...wordList, newItem]);
         setInputWord('');
         setInputMeaning('');
         setInputHint('');
+        setInputCategory('');
+    };
+
+    const handleCategoryChange = (event) => {
+        setInputCategory(event.target.value);
+    };
+
+    const handleCategoryAdd = () => {
+        if (inputCategory && !categories.includes(inputCategory)) {
+            setCategories([...categories, inputCategory]);
+        }
+        setInputCategory('');
     };
 
     return (
         <div>
             <div>
-                <div>
+
+                <div className="radio-group" style={{ marginTop: '10px' }}>
+                    <label>
+                        <input
+                            type="radio"
+                            value="word"
+                            checked={type === 'word'}
+                            onChange={(event) => setType(event.target.value)}
+                        />
+                        단어
+
+                        <input
+                            type="radio"
+                            value="sentence"
+                            checked={type === 'sentence'}
+                            onChange={(event) => setType(event.target.value)}
+                        />
+                        예문
+                    </label>
+                </div>
+
+                <div  style={{ marginTop: '10px' }}>
                     <label>영어</label>
                     <input
                         value={inputWord}
@@ -55,30 +91,29 @@ function Inputword() {
                     />
                 </div>
 
-                <div className="radio-group">
-                    <label>
+                <div className="category-input" style={{ marginTop: '10px' }}>
+                    <label>카테고리</label>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                         <input
-                            type="radio"
-                            value="word"
-                            checked={type === 'word'}
-                            onChange={(event) => setType(event.target.value)}
+                            value={inputCategory}
+                            type="text"
+                            placeholder="카테고리 입력"
+                            onChange={handleCategoryChange}
+                            style={{ marginRight: '10px' }}
                         />
-                        단어
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            value="sentence"
-                            checked={type === 'sentence'}
-                            onChange={(event) => setType(event.target.value)}
-                        />
-                        예문
-                    </label>
+                        <button onClick={handleCategoryAdd}>추가</button>
+                    </div>
+                    <ul>
+                        {categories.map((category, index) => (
+                            <li key={index} onClick={() => setInputCategory(category)}>{category}</li>
+                        ))}
+                    </ul>
                 </div>
 
+            
                 <button onClick={addItem}>추가</button>
 
-                <WordBoard wordList={wordList} />
+                <WordBoard wordList={wordList} setWordList={setWordList} />
             </div>
         </div>
     );

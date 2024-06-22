@@ -7,7 +7,10 @@ function WordItem(props) {
         <div>
             <div>
                 <div>
-                    <h6>{props.item.type === 'word' ? '단어' : '예문'}</h6>
+                    <h6>
+                        {props.item.type === 'word' ? '단어' : '예문'}
+                        - {props.item.category}
+                    </h6>
                 </div>
             </div>
             <div>
