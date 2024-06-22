@@ -1,6 +1,6 @@
 import React from "react";
 
-function Home(){
+function Logout() {
     const logout = () => {
         localStorage.clear()
         window.location.reload()
@@ -15,4 +15,4 @@ function Home(){
     );
 }
 
-export default Home;
+export default Logout;
