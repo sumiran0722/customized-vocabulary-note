@@ -7,7 +7,6 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import TextField from '@material-ui/core/TextField';
 import Checkbox from '@material-ui/core/Checkbox';
 import { getDatabase, ref, set, onValue, push, remove } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
@@ -21,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const WordItem = ({ item }) => (
-    <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }}>
+    <div style={{ padding: '2px', border: '1px solid #ccc', borderRadius: '5px', width: '80%'}}>
         <div>
             <h6>
                 {item.type === 'word' ? '단어' : '예문'} - {item.category}
@@ -57,14 +56,16 @@ const Voca = () => {
     const userId = user ? user.uid : null;
 
     useEffect(() => {
-        if (userId) {
+        const db = getDatabase(); // Define db inside useEffect
+        if (userId && db) {
             const wordsRef = ref(db, `Voca/${userId}`);
             onValue(wordsRef, (snapshot) => {
                 const data = snapshot.val();
                 setWords(data || {});
             });
         }
-    }, [userId]);
+    }, [userId]); // Include userId in the dependency array
+    
 
     const handleDialogToggle = () => setDialog(!dialog);
 
@@ -132,7 +133,7 @@ const Voca = () => {
                 const word = words[id];
                 if (!word) return null;
                 return (
-                    <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
+                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
                         <Checkbox
                             style={{ marginRight: '10px' }}
                             checked={selectedItems.includes(index)}

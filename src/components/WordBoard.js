@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const WordItem = ({ item }) => (
-    <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }}>
+    <div style={{ padding: '2px', border: '1px solid #ccc', borderRadius: '5px', width: '80%'}}>
         <div>
             <h6>
                 {item.type === 'word' ? '단어' : '예문'} - {item.category}
@@ -54,9 +54,8 @@ const WordBoard = () => {
     const db = getDatabase();
     const user = auth.currentUser;
     const userId = user ? user.uid : null;
-
     useEffect(() => {
-        if (userId) {
+        if (userId && db) {
             const wordsRef = ref(db, `Voca/${userId}`);
             onValue(wordsRef, (snapshot) => {
                 const data = snapshot.val();
@@ -71,7 +70,8 @@ const WordBoard = () => {
                 }
             });
         }
-    }, [userId]);
+    }, [userId, db]); // Include db in the dependency array
+    
 
     const handleDialogToggle = () => setDialog(!dialog);
 
