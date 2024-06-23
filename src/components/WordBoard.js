@@ -21,6 +21,14 @@ function WordBoard(props) {
             const updatedList = props.wordList.filter((item, index) => !selectedItems.includes(index));
             props.setWordList(updatedList);
             setSelectedItems([]);
+
+            // Update IDs in Firebase database
+            if (props.wordList.length > updatedList.length) {
+                updatedList.forEach((item, index) => {
+                    const newItem = { ...item, id: index.toString() };
+                    props.setWordList((prevList) => prevList.map((word, idx) => (idx === index ? newItem : word)));
+                });
+            }
         }
     };
 
