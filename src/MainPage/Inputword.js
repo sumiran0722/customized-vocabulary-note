@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import WordBoard from "../components/WordBoard";
 import '../styles/Inputword.css';
-import { getDatabase, ref, set, onValue, remove } from "firebase/database";
+import { getDatabase, ref, set, onValue, remove, push } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
 
 function Inputword() {
     const [inputWord, setInputWord] = useState('');
@@ -25,15 +27,9 @@ function Inputword() {
                 if (data) {
                     const wordArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                     setWordList(wordArray);
-                }
-            });
 
-            const categoriesRef = ref(db, `Categories/${userId}`);
-            onValue(categoriesRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const categoriesArray = Object.values(data); // 수정
-                    setCategories(prevCategories => [...new Set([...prevCategories, ...categoriesArray])]);
+                    const uniqueCategories = [...new Set(wordArray.map(word => word.category))];
+                    setCategories(prevCategories => [...new Set([...prevCategories, ...uniqueCategories])]);
                 }
             });
         }
@@ -47,15 +43,15 @@ function Inputword() {
 
         const newItem = {
             type: type,
-            voca: inputWord,
+            word: inputWord,
             meaning: inputMeaning,
             hint: inputHint,
             category: inputCategory || '기타'
         };
 
         if (userId) {
-            const newWordKey = wordList.length.toString(); // 고유 ID로 설정
-            set(ref(db, `Voca/${userId}/${newWordKey}`), newItem);
+            const newWordRef = push(ref(db, `Voca/${userId}`));
+            set(newWordRef, newItem);
             setInputWord('');
             setInputMeaning('');
             setInputHint('');
@@ -67,11 +63,12 @@ function Inputword() {
         if (userId) {
             const itemRef = ref(db, `Voca/${userId}/${id}`);
             remove(itemRef).then(() => {
-                const updatedList = wordList.filter(item => item.id !== id).map((item, index) => ({ ...item, id: index.toString() }));
+                const updatedList = wordList.filter(item => item.id !== id);
                 setWordList(updatedList);
-                updatedList.forEach(item => {
-                    set(ref(db, `Voca/${userId}/${item.id}`), item);
-                });
+
+                // Update categories after removal
+                const uniqueCategories = [...new Set(updatedList.map(word => word.category))];
+                setCategories(uniqueCategories);
             });
         }
     };
@@ -84,12 +81,12 @@ function Inputword() {
         if (inputCategory && !categories.includes(inputCategory)) {
             const newCategories = [...categories, inputCategory];
             setCategories(newCategories);
-            if (userId) {
-                const newCategoryKey = newCategories.length.toString(); // 고유 ID로 설정
-                set(ref(db, `Categories/${userId}/${newCategoryKey}`), inputCategory);
-            }
         }
         setInputCategory('');
+    };
+
+    const handleCategoryDelete = (category) => {
+        setCategories(categories.filter(cat => cat !== category));
     };
 
     return (
@@ -158,7 +155,14 @@ function Inputword() {
                     </div>
                     <ul>
                         {categories.map((category, index) => (
-                            <li key={index} onClick={() => setInputCategory(category)}>{category}</li>
+                            <li key={index} onClick={() => setInputCategory(category)} style={{ display: 'flex', alignItems: 'center' }}>
+                                <span>{category}</span>
+                                <IconButton 
+                                    onClick={() => handleCategoryDelete(category)}
+                                    style={{ marginLeft: '5px', padding: '0', width: '20px', height: '20px' }}>
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </li>
                         ))}
                     </ul>
                 </div>

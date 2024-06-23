@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
-import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
 import Fab from '@material-ui/core/Fab';
-import AddIcon from '@material-ui/icons/Add';
+import DeleteIcon from '@material-ui/icons/Delete';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import TextField from '@material-ui/core/TextField';
+import Checkbox from '@material-ui/core/Checkbox';
+import { getDatabase, ref, set, onValue, push, remove } from "firebase/database";
+import { auth } from '../GoogleSingin/config';
 
 const useStyles = makeStyles((theme) => ({
     fab: {
@@ -21,113 +20,140 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-const databaseURL = "https://jini-c66ca-default-rtdb.firebaseio.com";
+const WordItem = ({ item }) => (
+    <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }}>
+        <div>
+            <h6>
+                {item.type === 'word' ? '단어' : '예문'} - {item.category}
+            </h6>
+        </div>
+        <div>
+            <div>
+                <strong>영어 :</strong> {item.word}
+            </div>
+            <div>
+                <strong>뜻 :</strong> {item.meaning}
+            </div>
+            <div>
+                <h6><strong>Hint :</strong> {item.hint}</h6>
+            </div>
+        </div>
+    </div>
+);
 
-function Voca() {
+const Voca = () => {
     const classes = useStyles();
     const [words, setWords] = useState({});
     const [dialog, setDialog] = useState(false);
     const [word, setWord] = useState('');
-    const [weight, setWeight] = useState('');
+    const [meaning, setMeaning] = useState('');
+    const [hint, setHint] = useState('');
+    const [category, setCategory] = useState('');
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+
+    const db = getDatabase();
+    const user = auth.currentUser;
+    const userId = user ? user.uid : null;
 
     useEffect(() => {
-        fetch(`${databaseURL}/words.json`).then(res => {
-            if (res.status !== 200) {
-                throw new Error(res.statusText);
-            }
-            return res.json();
-        }).then(words => setWords(words || {}));
-    }, []);
+        if (userId) {
+            const wordsRef = ref(db, `Voca/${userId}`);
+            onValue(wordsRef, (snapshot) => {
+                const data = snapshot.val();
+                setWords(data || {});
+            });
+        }
+    }, [userId]);
 
     const handleDialogToggle = () => setDialog(!dialog);
 
     const handleValueChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'word') setWord(value);
-        if (name === 'weight') setWeight(value);
+        if (name === 'voca') setWord(value);
+        if (name === 'meaning') setMeaning(value);
+        if (name === 'hint') setHint(value);
+        if (name === 'category') setCategory(value);
     };
 
     const handleSubmit = () => {
         const newWord = {
             word: word,
-            weight: weight
+            meaning: meaning,
+            hint: hint,
+            category: category,
+            type: 'word'
         };
         handleDialogToggle();
-        if (!newWord.word || !newWord.weight) {
+        if (!newWord.word || !newWord.meaning || !newWord.hint || !newWord.category) {
             return;
         }
-        fetch(`${databaseURL}/words.json`, {
-            method: 'POST',
-            body: JSON.stringify(newWord)
-        }).then(res => {
-            if (res.status !== 200) {
-                throw new Error(res.statusText);
-            }
-            return res.json();
-        }).then(data => {
-            setWords(prevWords => ({
-                ...prevWords,
-                [data.name]: newWord
-            }));
+
+        const newWordRef = push(ref(db, `Voca/${userId}`));
+        set(newWordRef, newWord).then(() => {
             setWord('');
-            setWeight('');
+            setMeaning('');
+            setHint('');
+            setCategory('');
         });
     };
 
-    const handleDelete = (id) => {
-        fetch(`${databaseURL}/words/${id}.json`, {
-            method: 'DELETE'
-        }).then(res => {
-            if (res.status !== 200) {
-                throw new Error(res.statusText);
-            }
-            return res.json();
-        }).then(() => {
-            setWords(prevWords => {
-                const updatedWords = { ...prevWords };
-                delete updatedWords[id];
-                return updatedWords;
-            });
+    const toggleCheckbox = (index) => {
+        setSelectedItems(prevSelectedItems =>
+            prevSelectedItems.includes(index)
+                ? prevSelectedItems.filter(item => item !== index)
+                : [...prevSelectedItems, index]
+        );
+    };
+
+    const handleDelete = () => {
+        setDeleteConfirmDialog(true);
+    };
+
+    const confirmDelete = () => {
+        setDeleteConfirmDialog(false);
+        // Delete selected items in reverse order
+        const reversedSelectedItems = selectedItems.slice().reverse();
+        reversedSelectedItems.forEach(index => {
+            const wordId = Object.keys(words)[index];
+            const wordRef = ref(db, `Voca/${userId}/${wordId}`);
+            remove(wordRef);
         });
+        setSelectedItems([]);
+    };
+
+    const cancelDelete = () => {
+        setDeleteConfirmDialog(false);
     };
 
     return (
         <div>
-            {Object.keys(words).map(id => {
+            {Object.keys(words).map((id, index) => {
                 const word = words[id];
                 if (!word) return null;
                 return (
-                    <Card key={id}>
-                        <CardContent>
-                            <Typography color="textSecondary" gutterBottom>
-                                가중치: {word.weight}
-                            </Typography>
-                            <Grid container>
-                                <Grid item xs={6}>
-                                    <Typography variant="h5" component="h2">
-                                        {word.word}
-                                    </Typography>
-                                </Grid>
-                                <Grid item xs={6}>
-                                    <Button variant="contained" color="primary" onClick={() => handleDelete(id)}>삭제</Button>
-                                </Grid>
-                            </Grid>
-                        </CardContent>
-                    </Card>
+                    <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
+                        <Checkbox
+                            style={{ marginRight: '10px' }}
+                            checked={selectedItems.includes(index)}
+                            onChange={() => toggleCheckbox(index)}
+                        />
+                        <WordItem item={word} />
+                    </div>
                 );
             })}
-            <Fab color="primary" className={classes.fab} onClick={handleDialogToggle}>
-                <AddIcon />
+            <Fab color="primary" className={classes.fab} onClick={handleDelete}>
+                <DeleteIcon />
             </Fab>
-            <Dialog open={dialog} onClose={handleDialogToggle}>
-                <DialogTitle>단어 추가</DialogTitle>
+        
+            <Dialog open={deleteConfirmDialog} onClose={cancelDelete}>
+                <DialogTitle>삭제 확인</DialogTitle>
                 <DialogContent>
-                    <TextField label="단어" type="text" name="word" value={word} onChange={handleValueChange} fullWidth /> <br />
-                    <TextField label="가중치" type="text" name="weight" value={weight} onChange={handleValueChange} fullWidth /> <br />
+                    선택한 단어를 삭제하시겠습니까?
                 </DialogContent>
                 <DialogActions>
-                    <Button variant="contained" color="primary" onClick={handleSubmit}>추가</Button>
-                    <Button variant="outlined" color="primary" onClick={handleDialogToggle}>닫기</Button>
+                    <Button variant="contained" color="primary" onClick={confirmDelete}>확인</Button>
+                    <Button variant="outlined" color="primary" onClick={cancelDelete}>취소</Button>
                 </DialogActions>
             </Dialog>
         </div>
