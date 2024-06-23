@@ -20,21 +20,27 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const WordItem = ({ item }) => (
-    <div style={{ padding: '2px', border: '1px solid #ccc', borderRadius: '5px', width: '80%'}}>
+    <div style={{ 
+        padding: '5px', 
+        border: '1px solid #ccc', 
+        borderRadius: '5px', 
+        width: '80%',
+        marginBottom: '10px' // Add margin bottom for spacing between items
+    }}>
         <div>
-            <h6>
+            <h6 style={{ margin: '5px 0' , fontSize: '12px'}}> 
                 {item.type === 'word' ? '단어' : '예문'} - {item.category}
             </h6>
         </div>
         <div>
-            <div>
-                <strong>영어 :</strong> {item.word}
+            <div style={{marginTop : '7px', marginBottom: '5px', fontSize: '30px' }}> 
+                <strong>{item.word}</strong>
+            </div>
+            <div style={{ marginTop : '10px', marginBottom: '5px' , fontSize: '20px'}}> 
+                <strong>{item.meaning}</strong>
             </div>
             <div>
-                <strong>뜻 :</strong> {item.meaning}
-            </div>
-            <div>
-                <h6><strong>Hint :</strong> {item.hint}</h6>
+                <h6 style={{marginTop : '17px', margin: '5px 0' , fontSize: '14px'}}>{item.hint}</h6> 
             </div>
         </div>
     </div>
