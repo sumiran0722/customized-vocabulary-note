@@ -79,8 +79,9 @@ const Voca = () => {
     const [sortOrder, setSortOrder] = useState('desc');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [showWords, setShowWords] = useState(true);
-    const [showSentences, setShowSentences] = useState(true);
+    const [showWords, setShowWords] = useState(true); // Initially true
+    const [showSentences, setShowSentences] = useState(true); // Initially true
+    const [selectedCategoriesText, setSelectedCategoriesText] = useState(''); // New state to show selected categories
 
     const db = getDatabase();
     const user = auth.currentUser;
@@ -184,15 +185,21 @@ const Voca = () => {
     };
 
     const handleCategorySelect = (category) => {
+        let newSelectedCategories = [];
         if (selectedCategories.includes(category)) {
-            setSelectedCategories(selectedCategories.filter(c => c !== category));
+            newSelectedCategories = selectedCategories.filter(c => c !== category);
         } else {
-            setSelectedCategories([...selectedCategories, category]);
+            newSelectedCategories = [...selectedCategories, category];
         }
+        setSelectedCategories(newSelectedCategories);
+        setSelectedCategoriesText(newSelectedCategories.join(', ')); // Update the text with selected categories
     };
 
     return (
         <div>
+            <div style={{ marginBottom: '10px' }}>
+                <strong>선택한 카테고리: </strong>{selectedCategoriesText || '없음'}
+            </div>
             <RadioGroup row value={sortOrder} onChange={handleSortOrderChange}>
                 <FormControlLabel value="desc" control={<Radio />} label="최신순" />
                 <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
