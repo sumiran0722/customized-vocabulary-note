@@ -21,7 +21,16 @@ const useStyles = makeStyles((theme) => ({
         position: 'fixed',
         bottom: '20px',
         right: '20px'
-    }
+    },
+    categoryButton: {
+        position: 'fixed',
+        bottom: '100px',  // Adjust as per your layout
+        right: '20px',
+        borderRadius: '50%',  // Makes the button circular
+        width: '56px',  // Size of the button
+        height: '56px',
+        zIndex: theme.zIndex.speedDial,  // Ensure it's above other elements
+    },
 }));
 
 const WordItem = ({ item, onToggleImportant }) => (
@@ -68,6 +77,8 @@ const Voca = () => {
     const [selectedItems, setSelectedItems] = useState([]);
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
     const [sortOrder, setSortOrder] = useState('desc'); // 기본값: 최신순
+    const [selectedCategories, setSelectedCategories] = useState([]); // State for selected categories
+    const [categories, setCategories] = useState([]); // State for categories
 
     const db = getDatabase();
     const user = auth.currentUser;
@@ -83,8 +94,13 @@ const Voca = () => {
                         .sort((a, b) => sortOrder === 'desc' ? b[1].timestamp - a[1].timestamp : a[1].timestamp - b[1].timestamp)
                         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
                     setWords(sortedWords);
+
+                    // Extract categories from data
+                    const uniqueCategories = [...new Set(Object.values(data).map(word => word.category))];
+                    setCategories(uniqueCategories);
                 } else {
                     setWords({});
+                    setCategories([]);
                 }
             });
         }
@@ -162,15 +178,57 @@ const Voca = () => {
         update(wordRef, { important: !currentStatus });
     };
 
+    // Function to handle opening and closing the category selection dialog
+    const handleCategoryDialogToggle = () => {
+        setDialog(!dialog);
+    };
+
+    // Function to handle selecting/unselecting a category
+    const handleCategorySelect = (category) => {
+        if (selectedCategories.includes(category)) {
+            setSelectedCategories(selectedCategories.filter(c => c !== category));
+        } else {
+            setSelectedCategories([...selectedCategories, category]);
+        }
+    };
+
     return (
         <div>
             <RadioGroup row value={sortOrder} onChange={handleSortOrderChange}>
                 <FormControlLabel value="desc" control={<Radio />} label="최신순" />
                 <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
             </RadioGroup>
+
+            {/* Button to open the category selection dialog */}
+            <Fab color="primary" className={classes.categoryButton} onClick={handleCategoryDialogToggle}>
+                카테고리 선택
+            </Fab>
+
+            {/* Category Selection Dialog */}
+            <Dialog open={dialog} onClose={handleDialogToggle}>
+                <DialogTitle>카테고리 선택</DialogTitle>
+                <DialogContent>
+                    {categories.map((category, index) => (
+                        <FormControlLabel
+                            key={index}
+                            control={<Checkbox checked={selectedCategories.includes(category)} onChange={() => handleCategorySelect(category)} />}
+                            label={category}
+                        />
+                    ))}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDialogToggle} color="primary">
+                        닫기
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Display Words */}
             {Object.keys(words).map((id, index) => {
                 const word = words[id];
-                if (!word) return null;
+                if (!word || (selectedCategories.length > 0 && !selectedCategories.includes(word.category))) {
+                    return null;
+                }
                 return (
                     <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
                         <Checkbox
@@ -183,10 +241,12 @@ const Voca = () => {
                 );
             })}
 
+            {/* Delete Button */}
             <Fab color="primary" className={classes.fab} onClick={handleDelete}>
                 <DeleteIcon />
             </Fab>
-        
+
+            {/* Delete Confirmation Dialog */}
             <Dialog open={deleteConfirmDialog} onClose={cancelDelete}>
                 <DialogTitle>삭제 확인</DialogTitle>
                 <DialogContent>
@@ -198,7 +258,6 @@ const Voca = () => {
                 </DialogActions>
             </Dialog>
         </div>
-        
     );
 }
 
