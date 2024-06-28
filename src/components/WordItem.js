@@ -1,8 +1,6 @@
 import React from "react";
 import '../styles/WordItem.css';
-import IconButton from '@material-ui/core/IconButton';
-import StarIcon from '@material-ui/icons/Star';
-import StarBorderIcon from '@material-ui/icons/StarBorder';
+import Checkbox from '@material-ui/core/Checkbox'; 
 
 function WordItem(props) {
 
@@ -25,9 +23,6 @@ function WordItem(props) {
                     <h6><strong>Hint :</strong> {props.item.hint}</h6>
                 </div>                
             </div>
-            <IconButton onClick={() => onToggleImportant(item.id)}>
-                {item.important ? <StarIcon /> : <StarBorderIcon />}
-            </IconButton>
         </div>
     );
     

@@ -13,8 +13,8 @@ import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import { getDatabase, ref, set, onValue, push, remove, update } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
-import StarIcon from '@material-ui/icons/Star'; // Import StarIcon
-import StarBorderIcon from '@material-ui/icons/StarBorder'; // Import StarBorderIcon
+import StarIcon from '@material-ui/icons/Star';
+import StarBorderIcon from '@material-ui/icons/StarBorder';
 
 const useStyles = makeStyles((theme) => ({
     fab: {
@@ -24,37 +24,37 @@ const useStyles = makeStyles((theme) => ({
     },
     categoryButton: {
         position: 'fixed',
-        bottom: '100px',  // Adjust as per your layout
+        bottom: '100px',
         right: '20px',
-        borderRadius: '50%',  // Makes the button circular
-        width: '56px',  // Size of the button
+        borderRadius: '50%',
+        width: '56px',
         height: '56px',
-        zIndex: theme.zIndex.speedDial,  // Ensure it's above other elements
+        zIndex: theme.zIndex.speedDial,
     },
 }));
 
 const WordItem = ({ item, onToggleImportant }) => (
-    <div style={{ 
-        padding: '5px', 
-        border: '1px solid #ccc', 
-        borderRadius: '5px', 
+    <div style={{
+        padding: '5px',
+        border: '1px solid #ccc',
+        borderRadius: '5px',
         width: '80%',
-        marginBottom: '10px', // Add margin bottom for spacing between items
-        display: 'flex', 
-        alignItems: 'center' 
+        marginBottom: '10px',
+        display: 'flex',
+        alignItems: 'center'
     }}>
         <div style={{ flex: 1 }}>
-            <h6 style={{ margin: '5px 0', fontSize: '12px' }}> 
+            <h6 style={{ margin: '5px 0', fontSize: '12px' }}>
                 {item.type === 'word' ? '단어' : '예문'} - {item.category}
             </h6>
-            <div style={{ marginTop: '7px', marginBottom: '5px', fontSize: '30px' }}> 
+            <div style={{ marginTop: '7px', marginBottom: '5px', fontSize: '30px' }}>
                 <strong>{item.word}</strong>
             </div>
-            <div style={{ marginTop: '10px', marginBottom: '5px', fontSize: '20px' }}> 
+            <div style={{ marginTop: '10px', marginBottom: '5px', fontSize: '20px' }}>
                 <strong>{item.meaning}</strong>
             </div>
             <div>
-                <h6 style={{ marginTop: '17px', margin: '5px 0', fontSize: '14px' }}>{item.hint}</h6> 
+                <h6 style={{ marginTop: '17px', margin: '5px 0', fontSize: '14px' }}>{item.hint}</h6>
             </div>
         </div>
         <Checkbox
@@ -76,9 +76,9 @@ const Voca = () => {
     const [category, setCategory] = useState('');
     const [selectedItems, setSelectedItems] = useState([]);
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
-    const [sortOrder, setSortOrder] = useState('desc'); // 기본값: 최신순
-    const [selectedCategories, setSelectedCategories] = useState([]); // State for selected categories
-    const [categories, setCategories] = useState([]); // State for categories
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [categories, setCategories] = useState([]);
 
     const db = getDatabase();
     const user = auth.currentUser;
@@ -95,9 +95,8 @@ const Voca = () => {
                         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
                     setWords(sortedWords);
 
-                    // Extract categories from data
                     const uniqueCategories = [...new Set(Object.values(data).map(word => word.category))];
-                    setCategories(uniqueCategories);
+                    setCategories(['important', ...uniqueCategories]);
                 } else {
                     setWords({});
                     setCategories([]);
@@ -123,8 +122,8 @@ const Voca = () => {
             hint: hint,
             category: category,
             type: 'word',
-            timestamp: Date.now(),  // 현재 시간을 밀리초로 저장
-            important: false  // 기본적으로 중요하지 않은 상태
+            timestamp: Date.now(),
+            important: false
         };
 
         handleDialogToggle();
@@ -178,12 +177,10 @@ const Voca = () => {
         update(wordRef, { important: !currentStatus });
     };
 
-    // Function to handle opening and closing the category selection dialog
     const handleCategoryDialogToggle = () => {
         setDialog(!dialog);
     };
 
-    // Function to handle selecting/unselecting a category
     const handleCategorySelect = (category) => {
         if (selectedCategories.includes(category)) {
             setSelectedCategories(selectedCategories.filter(c => c !== category));
@@ -199,12 +196,10 @@ const Voca = () => {
                 <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
             </RadioGroup>
 
-            {/* Button to open the category selection dialog */}
             <Fab color="primary" className={classes.categoryButton} onClick={handleCategoryDialogToggle}>
-                카테고리 선택
+                📁
             </Fab>
 
-            {/* Category Selection Dialog */}
             <Dialog open={dialog} onClose={handleDialogToggle}>
                 <DialogTitle>카테고리 선택</DialogTitle>
                 <DialogContent>
@@ -212,7 +207,7 @@ const Voca = () => {
                         <FormControlLabel
                             key={index}
                             control={<Checkbox checked={selectedCategories.includes(category)} onChange={() => handleCategorySelect(category)} />}
-                            label={category}
+                            label={category === 'important' ? '⭐' : category}
                         />
                     ))}
                 </DialogContent>
@@ -223,12 +218,22 @@ const Voca = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Display Words */}
             {Object.keys(words).map((id, index) => {
                 const word = words[id];
-                if (!word || (selectedCategories.length > 0 && !selectedCategories.includes(word.category))) {
+                if (!word) {
                     return null;
                 }
+
+                if (selectedCategories.includes('important')) {
+                    if (!word.important) {
+                        return null;
+                    }
+                } else {
+                    if (selectedCategories.length > 0 && !selectedCategories.includes(word.category)) {
+                        return null;
+                    }
+                }
+
                 return (
                     <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
                         <Checkbox
@@ -241,12 +246,10 @@ const Voca = () => {
                 );
             })}
 
-            {/* Delete Button */}
             <Fab color="primary" className={classes.fab} onClick={handleDelete}>
                 <DeleteIcon />
             </Fab>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog open={deleteConfirmDialog} onClose={cancelDelete}>
                 <DialogTitle>삭제 확인</DialogTitle>
                 <DialogContent>
@@ -259,6 +262,6 @@ const Voca = () => {
             </Dialog>
         </div>
     );
-}
+};
 
 export default Voca;
