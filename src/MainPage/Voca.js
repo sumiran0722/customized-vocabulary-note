@@ -11,11 +11,10 @@ import Checkbox from '@material-ui/core/Checkbox';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import StarIcon from '@material-ui/icons/Star';
-import StarBorderIcon from '@material-ui/icons/StarBorder';
-import IconButton from '@material-ui/core/IconButton';
 import { getDatabase, ref, set, onValue, push, remove, update } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
+import StarIcon from '@material-ui/icons/Star'; // Import StarIcon
+import StarBorderIcon from '@material-ui/icons/StarBorder'; // Import StarBorderIcon
 
 const useStyles = makeStyles((theme) => ({
     fab: {
@@ -49,9 +48,12 @@ const WordItem = ({ item, onToggleImportant }) => (
                 <h6 style={{ marginTop: '17px', margin: '5px 0', fontSize: '14px' }}>{item.hint}</h6> 
             </div>
         </div>
-        <IconButton onClick={onToggleImportant}>
-            {item.important ? <StarIcon /> : <StarBorderIcon />}
-        </IconButton>
+        <Checkbox
+            checked={item.important}
+            onChange={onToggleImportant}
+            icon={<StarBorderIcon />}
+            checkedIcon={<StarIcon />}
+        />
     </div>
 );
 
