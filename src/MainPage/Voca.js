@@ -79,6 +79,8 @@ const Voca = () => {
     const [sortOrder, setSortOrder] = useState('desc');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [showWords, setShowWords] = useState(true);
+    const [showSentences, setShowSentences] = useState(true);
 
     const db = getDatabase();
     const user = auth.currentUser;
@@ -196,6 +198,17 @@ const Voca = () => {
                 <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
             </RadioGroup>
 
+            <div style={{ marginBottom: '10px' }}>
+                <FormControlLabel
+                    control={<Checkbox checked={showWords} onChange={() => setShowWords(!showWords)} />}
+                    label="단어 보기"
+                />
+                <FormControlLabel
+                    control={<Checkbox checked={showSentences} onChange={() => setShowSentences(!showSentences)} />}
+                    label="예문 보기"
+                />
+            </div>
+
             <Fab color="primary" className={classes.categoryButton} onClick={handleCategoryDialogToggle}>
                 📁
             </Fab>
@@ -224,26 +237,30 @@ const Voca = () => {
                     return null;
                 }
 
-                if (selectedCategories.includes('important')) {
-                    if (!word.important) {
-                        return null;
+                if ((showWords && word.type === 'word') || (showSentences && word.type === 'sentence')) {
+                    if (selectedCategories.includes('important')) {
+                        if (!word.important) {
+                            return null;
+                        }
+                    } else {
+                        if (selectedCategories.length > 0 && !selectedCategories.includes(word.category)) {
+                            return null;
+                        }
                     }
-                } else {
-                    if (selectedCategories.length > 0 && !selectedCategories.includes(word.category)) {
-                        return null;
-                    }
-                }
 
-                return (
-                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
-                        <Checkbox
-                            style={{ marginRight: '10px' }}
-                            checked={selectedItems.includes(index)}
-                            onChange={() => toggleCheckbox(index)}
-                        />
-                        <WordItem item={word} onToggleImportant={() => toggleImportant(id)} />
-                    </div>
-                );
+                    return (
+                        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
+                            <Checkbox
+                                style={{ marginRight: '10px' }}
+                                checked={selectedItems.includes(index)}
+                                onChange={() => toggleCheckbox(index)}
+                            />
+                            <WordItem item={word} onToggleImportant={() => toggleImportant(id)} />
+                        </div>
+                    );
+                } else {
+                    return null;
+                }
             })}
 
             <Fab color="primary" className={classes.fab} onClick={handleDelete}>

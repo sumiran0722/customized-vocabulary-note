@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import WordBoard from "../components/WordBoard";
 import '../styles/Inputword.css';

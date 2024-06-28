@@ -1,6 +1,6 @@
 import React from "react";
 import '../styles/WordItem.css';
-import Checkbox from '@material-ui/core/Checkbox'; 
+
 
 function WordItem(props) {
 
