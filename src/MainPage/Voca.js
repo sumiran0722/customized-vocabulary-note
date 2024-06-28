@@ -8,7 +8,13 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Checkbox from '@material-ui/core/Checkbox';
-import { getDatabase, ref, set, onValue, push, remove } from "firebase/database";
+import Radio from '@material-ui/core/Radio';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import StarIcon from '@material-ui/icons/Star';
+import StarBorderIcon from '@material-ui/icons/StarBorder';
+import IconButton from '@material-ui/core/IconButton';
+import { getDatabase, ref, set, onValue, push, remove, update } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
 
 const useStyles = makeStyles((theme) => ({
@@ -19,30 +25,33 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-const WordItem = ({ item }) => (
+const WordItem = ({ item, onToggleImportant }) => (
     <div style={{ 
         padding: '5px', 
         border: '1px solid #ccc', 
         borderRadius: '5px', 
         width: '80%',
-        marginBottom: '10px' // Add margin bottom for spacing between items
+        marginBottom: '10px', // Add margin bottom for spacing between items
+        display: 'flex', 
+        alignItems: 'center' 
     }}>
-        <div>
-            <h6 style={{ margin: '5px 0' , fontSize: '12px'}}> 
+        <div style={{ flex: 1 }}>
+            <h6 style={{ margin: '5px 0', fontSize: '12px' }}> 
                 {item.type === 'word' ? '단어' : '예문'} - {item.category}
             </h6>
-        </div>
-        <div>
-            <div style={{marginTop : '7px', marginBottom: '5px', fontSize: '30px' }}> 
+            <div style={{ marginTop: '7px', marginBottom: '5px', fontSize: '30px' }}> 
                 <strong>{item.word}</strong>
             </div>
-            <div style={{ marginTop : '10px', marginBottom: '5px' , fontSize: '20px'}}> 
+            <div style={{ marginTop: '10px', marginBottom: '5px', fontSize: '20px' }}> 
                 <strong>{item.meaning}</strong>
             </div>
             <div>
-                <h6 style={{marginTop : '17px', margin: '5px 0' , fontSize: '14px'}}>{item.hint}</h6> 
+                <h6 style={{ marginTop: '17px', margin: '5px 0', fontSize: '14px' }}>{item.hint}</h6> 
             </div>
         </div>
+        <IconButton onClick={onToggleImportant}>
+            {item.important ? <StarIcon /> : <StarBorderIcon />}
+        </IconButton>
     </div>
 );
 
@@ -56,22 +65,28 @@ const Voca = () => {
     const [category, setCategory] = useState('');
     const [selectedItems, setSelectedItems] = useState([]);
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+    const [sortOrder, setSortOrder] = useState('desc'); // 기본값: 최신순
 
     const db = getDatabase();
     const user = auth.currentUser;
     const userId = user ? user.uid : null;
 
     useEffect(() => {
-        const db = getDatabase(); // Define db inside useEffect
         if (userId && db) {
             const wordsRef = ref(db, `Voca/${userId}`);
             onValue(wordsRef, (snapshot) => {
                 const data = snapshot.val();
-                setWords(data || {});
+                if (data) {
+                    const sortedWords = Object.entries(data)
+                        .sort((a, b) => sortOrder === 'desc' ? b[1].timestamp - a[1].timestamp : a[1].timestamp - b[1].timestamp)
+                        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+                    setWords(sortedWords);
+                } else {
+                    setWords({});
+                }
             });
         }
-    }, [userId]); // Include userId in the dependency array
-    
+    }, [userId, db, sortOrder]);
 
     const handleDialogToggle = () => setDialog(!dialog);
 
@@ -89,8 +104,11 @@ const Voca = () => {
             meaning: meaning,
             hint: hint,
             category: category,
-            type: 'word'
+            type: 'word',
+            timestamp: Date.now(),  // 현재 시간을 밀리초로 저장
+            important: false  // 기본적으로 중요하지 않은 상태
         };
+
         handleDialogToggle();
         if (!newWord.word || !newWord.meaning || !newWord.hint || !newWord.category) {
             return;
@@ -119,7 +137,6 @@ const Voca = () => {
 
     const confirmDelete = () => {
         setDeleteConfirmDialog(false);
-        // Delete selected items in reverse order
         const reversedSelectedItems = selectedItems.slice().reverse();
         reversedSelectedItems.forEach(index => {
             const wordId = Object.keys(words)[index];
@@ -133,8 +150,22 @@ const Voca = () => {
         setDeleteConfirmDialog(false);
     };
 
+    const handleSortOrderChange = (event) => {
+        setSortOrder(event.target.value);
+    };
+
+    const toggleImportant = (wordId) => {
+        const wordRef = ref(db, `Voca/${userId}/${wordId}`);
+        const currentStatus = words[wordId].important;
+        update(wordRef, { important: !currentStatus });
+    };
+
     return (
         <div>
+            <RadioGroup row value={sortOrder} onChange={handleSortOrderChange}>
+                <FormControlLabel value="desc" control={<Radio />} label="최신순" />
+                <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
+            </RadioGroup>
             {Object.keys(words).map((id, index) => {
                 const word = words[id];
                 if (!word) return null;
@@ -145,10 +176,11 @@ const Voca = () => {
                             checked={selectedItems.includes(index)}
                             onChange={() => toggleCheckbox(index)}
                         />
-                        <WordItem item={word} />
+                        <WordItem item={word} onToggleImportant={() => toggleImportant(id)} />
                     </div>
                 );
             })}
+
             <Fab color="primary" className={classes.fab} onClick={handleDelete}>
                 <DeleteIcon />
             </Fab>
@@ -164,6 +196,7 @@ const Voca = () => {
                 </DialogActions>
             </Dialog>
         </div>
+        
     );
 }
 

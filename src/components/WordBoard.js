@@ -10,6 +10,9 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import Checkbox from '@material-ui/core/Checkbox';
 import { getDatabase, ref, set, onValue, push, remove } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Radio from '@material-ui/core/Radio';
 
 const useStyles = makeStyles((theme) => ({
     fab: {
@@ -45,7 +48,6 @@ const WordItem = ({ item }) => (
     </div>
 );
 
-
 const WordBoard = () => {
     const classes = useStyles();
     const [words, setWords] = useState({});
@@ -56,19 +58,20 @@ const WordBoard = () => {
     const [category, setCategory] = useState('');
     const [selectedItems, setSelectedItems] = useState([]);
     const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+    const [sortOrder, setSortOrder] = useState('desc'); // 기본값: 최신순
 
     const db = getDatabase();
     const user = auth.currentUser;
     const userId = user ? user.uid : null;
+
     useEffect(() => {
         if (userId && db) {
             const wordsRef = ref(db, `Voca/${userId}`);
             onValue(wordsRef, (snapshot) => {
                 const data = snapshot.val();
-                // Convert object to array and sort by timestamp in descending order
                 if (data) {
                     const sortedWords = Object.entries(data)
-                        .sort((a, b) => b[1].timestamp - a[1].timestamp)
+                        .sort((a, b) => sortOrder === 'desc' ? b[1].timestamp - a[1].timestamp : a[1].timestamp - b[1].timestamp)
                         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
                     setWords(sortedWords);
                 } else {
@@ -76,8 +79,11 @@ const WordBoard = () => {
                 }
             });
         }
-    }, [userId, db]); // Include db in the dependency array
-    
+    }, [userId, db, sortOrder]); // sortOrder를 포함하여 정렬 방식이 변경될 때마다 재정렬
+
+    const handleSortOrderChange = (event) => {
+        setSortOrder(event.target.value);
+    };
 
     const handleDialogToggle = () => setDialog(!dialog);
 
@@ -143,6 +149,12 @@ const WordBoard = () => {
 
     return (
         <div>
+            <div>
+                <RadioGroup row value={sortOrder} onChange={handleSortOrderChange}>
+                    <FormControlLabel value="desc" control={<Radio />} label="최신순" />
+                    <FormControlLabel value="asc" control={<Radio />} label="오래된순" />
+                </RadioGroup>
+            </div>
             {Object.keys(words).map((id, index) => {
                 const word = words[id];
                 if (!word) return null;

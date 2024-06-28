@@ -20,7 +20,7 @@ function WordItem(props) {
                 </div>
                 <div>
                     <h6><strong>Hint :</strong> {props.item.hint}</h6>
-                </div>
+                </div>                
             </div>
         </div>
     );

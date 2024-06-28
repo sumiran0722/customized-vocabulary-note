@@ -46,9 +46,10 @@ function Inputword() {
             word: inputWord,
             meaning: inputMeaning,
             hint: inputHint,
-            category: inputCategory || '기타'
+            category: inputCategory || '기타',
+            timestamp: Date.now()  // 현재 시간을 밀리초로 저장
         };
-
+    
         if (userId) {
             const newWordRef = push(ref(db, `Voca/${userId}`));
             set(newWordRef, newItem);
