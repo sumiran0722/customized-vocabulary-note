@@ -54,6 +54,11 @@ function AppShell({ classes, children }) {
                         </Link>
                     </MenuItem>
                     <MenuItem onClick={handleDrawerToggle}>
+                        <Link component={RouterLink} to="CardVoca">
+                            CardVoca
+                        </Link>
+                    </MenuItem>
+                    <MenuItem onClick={handleDrawerToggle}>
                         <Link component={RouterLink} to="/Logout">
                             Logout
                         </Link>

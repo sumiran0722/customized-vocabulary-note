@@ -3,7 +3,8 @@ import AppShell from "../components/AppShell";
 import Inputword from "./Inputword";
 import TodoList from "./TodoList";
 import Voca from "./Voca";
-import Logout from "../GoogleSingin/Logout"
+import CardVoca from './CardVoca';
+import Logout from "../GoogleSingin/Logout";
 
 function Home() {
     return (
@@ -14,6 +15,7 @@ function Home() {
                     <Route path="/Input" element={<Inputword />} />
                     <Route path="/TodoList" element={<TodoList />} />
                     <Route path="/Voca" element={<Voca />} />
+                    <Route path="/CardVoca" element={<CardVoca />} />
                     <Route path="/Logout" element={<Logout />} />
                 </Routes>
             </AppShell>
