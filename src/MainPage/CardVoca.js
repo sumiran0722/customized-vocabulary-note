@@ -280,6 +280,11 @@ const Voca = () => {
         setSelectedItems([]);
     };
 
+    const handleSelectAll = () => {
+        const allItems = Object.keys(words);
+        setSelectedItems(allItems);
+    };
+
     const handleStartCardVoca = () => {
         setStartCardVoca(true);
     };
@@ -351,9 +356,16 @@ const Voca = () => {
                         <FormControlLabel value="meaningFirst" control={<Radio />} label="뜻 우선 보기" />
                     </RadioGroup>
                 </div>
-                <Button onClick={handleDeselectAll} color="secondary">
-                    선택 모두 해제
-                </Button>
+                <div>
+                    <Button onClick={handleSelectAll} color="primary">
+                        모두 선택
+                    </Button>
+
+                    <Button onClick={handleDeselectAll} color="secondary">
+                        선택 모두 해제
+                    </Button>
+                </div>
+                
                 <Button onClick={handleStartCardVoca} color="primary" variant="contained" className={classes.startButton}>
                     카드 단어 보기 시작
                 </Button>
