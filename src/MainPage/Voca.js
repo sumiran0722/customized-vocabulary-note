@@ -239,36 +239,49 @@ const Voca = () => {
             </Dialog>
 
             {Object.keys(words).map((id, index) => {
-                const word = words[id];
-                if (!word) {
-                    return null;
-                }
+        const word = words[id];
+        if (!word) {
+            return null;
+        }
 
-                if ((showWords && word.type === 'word') || (showSentences && word.type === 'sentence')) {
-                    if (selectedCategories.includes('important')) {
-                        if (!word.important) {
-                            return null;
-                        }
-                    } else {
-                        if (selectedCategories.length > 0 && !selectedCategories.includes(word.category)) {
-                            return null;
-                        }
-                    }
-
-                    return (
-                        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
-                            <Checkbox
-                                style={{ marginRight: '10px' }}
-                                checked={selectedItems.includes(index)}
-                                onChange={() => toggleCheckbox(index)}
-                            />
-                            <WordItem item={word} onToggleImportant={() => toggleImportant(id)} />
-                        </div>
-                    );
+        // 체크박스 필터링 조건
+        const shouldShow = (() => {
+            if ((showWords && word.type === 'word') || (showSentences && word.type === 'sentence')) {
+                if (selectedCategories.length === 0) {
+                    // 아무 카테고리도 선택하지 않았을 때
+                    return true; // 모든 단어 표시
+                } else if (selectedCategories.includes('important')) {
+                    // 'important' 버튼만 눌렸을 경우
+                    return word.important && (selectedCategories.length === 1 || selectedCategories.includes(word.category));
+                } else if (selectedCategories.includes(word.category)) {
+                    // 다른 카테고리가 선택된 경우
+                    return selectedCategories.includes(word.category);
                 } else {
-                    return null;
+                    // 다른 카테고리 + 'important'가 눌린 경우
+                    return selectedCategories.includes(word.category) && word.important;
                 }
-            })}
+            }
+            return false;
+            
+        })();
+
+        if (!shouldShow) {
+            return null;
+        }
+
+        return (
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
+                <Checkbox
+                    style={{ marginRight: '10px' }}
+                    checked={selectedItems.includes(index)}
+                    onChange={() => toggleCheckbox(index)}
+                />
+                <WordItem item={word} onToggleImportant={() => toggleImportant(id)} />
+            </div>
+        );
+    })}
+
+
 
             <Fab color="primary" className={classes.fab} onClick={handleDelete}>
                 <DeleteIcon />

@@ -294,10 +294,29 @@ const Voca = () => {
     };
 
     let filteredWords = Object.entries(words).filter(([key, word]) => {
-        const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(word.category) || (selectedCategories.includes('important') && word.important);
+        // 선택된 카테고리가 하나도 없으면 모든 단어를 표시합니다.
+        if (selectedCategories.length === 0) {
+            return true;
+        }
+    
+        // 중요한 단어와 다른 카테고리가 함께 선택된 경우
+        if (selectedCategories.includes('important')) {
+            if (selectedCategories.length === 1) {
+                // important만 선택된 경우
+                return word.important;
+            } else {
+                // important와 다른 카테고리가 함께 선택된 경우
+                return word.important && selectedCategories.some(category => category !== 'important' && word.category === category);
+            }
+        }
+    
+        // 일반적인 경우: 선택된 카테고리에 해당하는 단어를 필터링합니다.
+        const matchesCategory = selectedCategories.includes(word.category);
         const matchesType = (showWords && word.type === 'word') || (showSentences && word.type === 'sentence');
+        
         return matchesCategory && matchesType;
     });
+    
 
     return (
         <div>
@@ -340,14 +359,15 @@ const Voca = () => {
                 </Button>
             </div>
             <div>
-                {filteredWords.map(([key, item]) => (
-                    <WordItem
-                        key={key}
-                        item={item}
-                        onToggleImportant={() => handleToggleImportant(key)}
-                        onSelect={() => handleItemSelect(key)}
-                        isSelected={selectedItems.includes(key)}
-                    />
+                {filteredWords.map(([id, word], index) => (
+                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px' }} key={index}>
+                        <Checkbox
+                            style={{ marginRight: '10px' }}
+                            checked={selectedItems.includes(id)}
+                            onChange={() => handleItemSelect(id)}
+                        />
+                        <WordItem item={word} onToggleImportant={() => handleToggleImportant(id)} isSelected={selectedItems.includes(id)} />
+                    </div>
                 ))}
             </div>
             <Fab color="primary" className={classes.fab} onClick={() => setSelectedItems([])}>
@@ -355,7 +375,10 @@ const Voca = () => {
             </Fab>
             {startCardVoca && selectedItems.length > 0 && (
                 <CardVoca
-                    selectedWords={filteredWords.filter(([key]) => selectedItems.includes(key)).map(([key, item]) => item)}
+                    selectedWords={Object.keys(words)
+                        .filter(id => selectedItems.includes(id))
+                        .map(id => words[id])
+                    }
                     wordFirst={wordFirst}
                     handleClose={handleCloseCardVoca}
                 />
