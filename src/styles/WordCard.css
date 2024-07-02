@@ -1,0 +1,14 @@
+.word {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.meaning {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.hint {
+    font-size: 14px;
+    margin-top: 10px;
+}

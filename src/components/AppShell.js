@@ -27,7 +27,10 @@ function AppShell({ classes, children }) {
     return (
         <div>
             <div className={classes.root}>
-                <AppBar position="static">
+                <AppBar position="static" style={{
+                    display: 'flex',
+                    justifyContent: 'flex-start'
+                }}>
                     <IconButton className={classes.menuButton} color="inherit" onClick={handleDrawerToggle}>
                         <MenuIcon />
                     </IconButton>
@@ -56,6 +59,11 @@ function AppShell({ classes, children }) {
                     <MenuItem onClick={handleDrawerToggle}>
                         <Link component={RouterLink} to="CardVoca">
                             CardVoca
+                        </Link>
+                    </MenuItem>
+                    <MenuItem onClick={handleDrawerToggle}>
+                        <Link component={RouterLink} to="VocaForCard">
+                            VocaForCard
                         </Link>
                     </MenuItem>
                     <MenuItem onClick={handleDrawerToggle}>

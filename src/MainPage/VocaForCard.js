@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Fab from '@material-ui/core/Fab';
-import DeleteIcon from '@material-ui/icons/Delete';
 import Checkbox from '@material-ui/core/Checkbox';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
@@ -15,23 +14,8 @@ import { auth } from '../GoogleSingin/config';
 import StarIcon from '@material-ui/icons/Star';
 import StarBorderIcon from '@material-ui/icons/StarBorder';
 import CloseIcon from '@material-ui/icons/Close';
-import IconButton from '@material-ui/core/IconButton';
 
 const useStyles = makeStyles((theme) => ({
-    fab: {
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px'
-    },
-    categoryButton: {
-        position: 'fixed',
-        bottom: '100px',
-        right: '20px',
-        borderRadius: '50%',
-        width: '56px',
-        height: '56px',
-        zIndex: theme.zIndex.speedDial,
-    },
     card: {
         padding: '20px',
         border: '1px solid #ccc',
@@ -56,25 +40,12 @@ const useStyles = makeStyles((theme) => ({
         fontSize: '14px',
         marginTop: '10px',
     },
-    navButton: {
-        position: 'absolute',
-        top: '50%',
-        transform: 'translateY(-50%)',
-    },
-    prevButton: {
-        left: '10px',
-    },
-    nextButton: {
-        right: '10px',
-    },
-    settings: {
-        padding: '20px',
-        marginBottom: '20px',
-        border: '1px solid #ccc',
-        borderRadius: '10px',
-    },
-    startButton: {
-        margin: '20px 0',
+    input: {
+        marginTop: '20px',
+        padding: '10px',
+        fontSize: '20px',
+        width: '100%',
+        boxSizing: 'border-box',
     },
 }));
 
@@ -104,21 +75,62 @@ const WordCard = ({ wordData, showMeaning, toggleMeaning }) => {
     );
 };
 
-const CardVoca = ({ selectedWords, wordFirst, handleClose }) => {
+const TestCard = ({ wordData, showMeaning, showHint, onAnswerChange, answer }) => {
+    const classes = useStyles();
+
+    return (
+        <div className={classes.card}>
+            {!showMeaning ? (
+                <div className={classes.word}>
+                    {wordData.meaning}
+                </div>
+            ) : (
+                <div>
+                    <div className={classes.meaning}>
+                        {wordData.word}
+                    </div>
+                    {showHint && (
+                        <div className={classes.hint}>
+                            {wordData.hint}
+                        </div>
+                    )}
+                </div>
+            )}
+            <input
+                className={classes.input}
+                placeholder={showMeaning ? '단어를 입력하세요' : '뜻을 입력하세요'}
+                value={answer}
+                onChange={onAnswerChange}
+            />
+        </div>
+    );
+};
+
+const TestVoca = ({ selectedWords, wordFirst, handleClose }) => {
     const classes = useStyles();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showMeaning, setShowMeaning] = useState(!wordFirst);
+    const [answers, setAnswers] = useState(Array(selectedWords.length).fill(''));
+    const [showHint, setShowHint] = useState(false); // State to manage hint visibility
 
-    const toggleMeaning = () => setShowMeaning(!showMeaning);
-
-    const handleNext = () => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % selectedWords.length);
-        setShowMeaning(!wordFirst);
+    const handleAnswerChange = (e) => {
+        const newAnswers = [...answers];
+        newAnswers[currentIndex] = e.target.value;
+        setAnswers(newAnswers);
     };
 
-    const handlePrev = () => {
-        setCurrentIndex((prevIndex) => (prevIndex - 1 + selectedWords.length) % selectedWords.length);
-        setShowMeaning(!wordFirst);
+    const handleNext = () => {
+        if (currentIndex < selectedWords.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+            setShowMeaning(!wordFirst);
+            setShowHint(false); // Reset hint visibility when moving to the next word
+        } else {
+            handleClose();
+        }
+    };
+
+    const toggleHint = () => {
+        setShowHint(!showHint); // Toggle hint visibility
     };
 
     return (
@@ -127,19 +139,19 @@ const CardVoca = ({ selectedWords, wordFirst, handleClose }) => {
                 <CloseIcon />
             </Button>
             <DialogContent>
-                {selectedWords.length > 0 && (
-                    <div>
-                        <WordCard wordData={selectedWords[currentIndex]} showMeaning={showMeaning} toggleMeaning={toggleMeaning} />
-                    </div>
-                )}
+                <TestCard
+                    wordData={selectedWords[currentIndex]}
+                    showMeaning={showMeaning}
+                    showHint={showHint} // Pass showHint state to TestCard
+                    onAnswerChange={handleAnswerChange}
+                    answer={answers[currentIndex]}
+                />
             </DialogContent>
             <DialogActions>
-                {/* Previous Button */}
-                <Button onClick={handlePrev} color="primary" className={classes.prevButton}>
-                    이전
+                <Button onClick={toggleHint} color="primary"> {/* Button to toggle hint visibility */}
+                    {showHint ? '힌트 숨기기' : '힌트 보기'}
                 </Button>
-                {/* Next Button */}
-                <Button onClick={handleNext} color="primary" className={classes.nextButton}>
+                <Button onClick={handleNext} color="primary">
                     다음
                 </Button>
             </DialogActions>
@@ -185,7 +197,7 @@ const WordItem = ({ item, onToggleImportant, onSelect, isSelected }) => (
     </div>
 );
 
-const Voca = () => {
+const VocaForCard = () => {
     const classes = useStyles();
     const [words, setWords] = useState({});
     const [selectedItems, setSelectedItems] = useState([]);
@@ -196,8 +208,8 @@ const Voca = () => {
     const [showSentences, setShowSentences] = useState(true);
     const [selectedCategoriesText, setSelectedCategoriesText] = useState('');
     const [startCardVoca, setStartCardVoca] = useState(false);
+    const [startTestVoca, setStartTestVoca] = useState(false);
     const [wordFirst, setWordFirst] = useState(true);
-    const [viewPreference, setViewPreference] = useState('wordFirst'); // Default to word first
 
     const db = getDatabase();
     const user = auth.currentUser;
@@ -244,7 +256,6 @@ const Voca = () => {
         setSelectedCategories(newSelectedCategories);
         setSelectedCategoriesText(newSelectedCategories.join(', '));
 
-        // Auto-select all words in the selected category
         let newSelectedItems = [];
         if (newSelectedCategories.length === 0) {
             newSelectedItems = [];
@@ -289,39 +300,35 @@ const Voca = () => {
         setStartCardVoca(true);
     };
 
+    const handleStartTestVoca = (wordFirst) => {
+        setWordFirst(wordFirst);
+        setStartTestVoca(true);
+    };
+
     const handleCloseCardVoca = () => {
         setStartCardVoca(false);
     };
 
-    const handleViewPreferenceChange = (event) => {
-        setViewPreference(event.target.value);
-        setWordFirst(event.target.value === 'wordFirst');
+    const handleCloseTestVoca = () => {
+        setStartTestVoca(false);
     };
 
     let filteredWords = Object.entries(words).filter(([key, word]) => {
-        // 선택된 카테고리가 하나도 없으면 모든 단어를 표시합니다.
         if (selectedCategories.length === 0) {
             return true;
         }
-    
-        // 중요한 단어와 다른 카테고리가 함께 선택된 경우
         if (selectedCategories.includes('important')) {
             if (selectedCategories.length === 1) {
-                // important만 선택된 경우
                 return word.important;
             } else {
-                // important와 다른 카테고리가 함께 선택된 경우
                 return word.important && selectedCategories.some(category => category !== 'important' && word.category === category);
             }
         }
-    
-        // 일반적인 경우: 선택된 카테고리에 해당하는 단어를 필터링합니다.
         const matchesCategory = selectedCategories.includes(word.category);
         const matchesType = (showWords && word.type === 'word') || (showSentences && word.type === 'sentence');
         
         return matchesCategory && matchesType;
     });
-    
 
     return (
         <div>
@@ -350,13 +357,6 @@ const Voca = () => {
                     ))}
                 </div>
                 <div>
-                    <h3>우선 보기 설정</h3>
-                    <RadioGroup value={viewPreference} onChange={handleViewPreferenceChange}>
-                        <FormControlLabel value="wordFirst" control={<Radio />} label="단어 우선 보기" />
-                        <FormControlLabel value="meaningFirst" control={<Radio />} label="뜻 우선 보기" />
-                    </RadioGroup>
-                </div>
-                <div>
                     <Button onClick={handleSelectAll} color="primary">
                         모두 선택
                     </Button>
@@ -366,8 +366,11 @@ const Voca = () => {
                     </Button>
                 </div>
                 
-                <Button onClick={handleStartCardVoca} color="primary" variant="contained" className={classes.startButton}>
-                    카드 단어 보기 시작
+                <Button onClick={() => handleStartTestVoca(true)} color="primary" variant="contained" className={classes.startButton}>
+                    단어로 테스트
+                </Button>
+                <Button onClick={() => handleStartTestVoca(false)} color="primary" variant="contained" className={classes.startButton}>
+                    뜻으로 테스트
                 </Button>
             </div>
             <div>
@@ -382,21 +385,18 @@ const Voca = () => {
                     </div>
                 ))}
             </div>
-            <Fab color="primary" className={classes.fab} onClick={() => setSelectedItems([])}>
-                <DeleteIcon />
-            </Fab>
-            {startCardVoca && selectedItems.length > 0 && (
-                <CardVoca
+            {startTestVoca && selectedItems.length > 0 && (
+                <TestVoca
                     selectedWords={Object.keys(words)
                         .filter(id => selectedItems.includes(id))
                         .map(id => words[id])
                     }
                     wordFirst={wordFirst}
-                    handleClose={handleCloseCardVoca}
+                    handleClose={handleCloseTestVoca}
                 />
             )}
         </div>
     );
 };
 
-export default Voca;
+export default VocaForCard;
