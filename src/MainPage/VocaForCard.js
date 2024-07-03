@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
-import Fab from '@material-ui/core/Fab';
 import Checkbox from '@material-ui/core/Checkbox';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
@@ -9,6 +8,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
+import Backdrop from '@material-ui/core/Backdrop';  // Import Backdrop
 import { getDatabase, ref, onValue, update } from "firebase/database";
 import { auth } from '../GoogleSingin/config';
 import StarIcon from '@material-ui/icons/Star';
@@ -47,6 +47,9 @@ const useStyles = makeStyles((theme) => ({
         width: '100%',
         boxSizing: 'border-box',
     },
+    backdrop: {
+        backgroundColor: 'rgba(0, 0, 0, 0.98)', // Darken the backdrop
+    },
 }));
 
 const WordCard = ({ wordData, showMeaning, toggleMeaning }) => {
@@ -74,6 +77,51 @@ const WordCard = ({ wordData, showMeaning, toggleMeaning }) => {
         </div>
     );
 };
+
+const AnswerReview = ({ words, answers, handleToggleImportant, handleClose }) => {
+    const classes = useStyles();
+
+    
+
+    return (
+        <Dialog
+            open={true}
+            onClose={handleClose}
+            fullWidth
+            maxWidth="md"
+            BackdropProps={{ classes: { root: classes.backdrop } }} // Apply custom backdrop style
+        >
+            <Button onClick={handleClose} color="primary">
+                <CloseIcon />
+            </Button>
+            <DialogContent>
+                {words.map((wordData, index) => (
+                    <div key={index} className={classes.card}>
+                        <div className={classes.word}>
+                            {wordData.word}
+                        </div>
+                        <div className={classes.meaning}>
+                            {wordData.meaning}
+                        </div>
+                        <div className={classes.hint}>
+                            {wordData.hint}
+                        </div>
+                        <div>
+                            <strong>사용자 입력: </strong>{answers[index]}
+                        </div>
+                        <Checkbox
+                            checked={wordData.important}
+                            onChange={() => handleToggleImportant(wordData.id)}
+                            icon={<StarBorderIcon />}
+                            checkedIcon={<StarIcon />}
+                        />
+                    </div>
+                ))}
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const TestCard = ({ wordData, showMeaning, showHint, onAnswerChange, answer }) => {
     const classes = useStyles();
@@ -111,7 +159,8 @@ const TestVoca = ({ selectedWords, wordFirst, handleClose }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showMeaning, setShowMeaning] = useState(!wordFirst);
     const [answers, setAnswers] = useState(Array(selectedWords.length).fill(''));
-    const [showHint, setShowHint] = useState(false); // State to manage hint visibility
+    const [showHint, setShowHint] = useState(false);
+    const [testCompleted, setTestCompleted] = useState(false);
 
     const handleAnswerChange = (e) => {
         const newAnswers = [...answers];
@@ -123,41 +172,72 @@ const TestVoca = ({ selectedWords, wordFirst, handleClose }) => {
         if (currentIndex < selectedWords.length - 1) {
             setCurrentIndex(currentIndex + 1);
             setShowMeaning(!wordFirst);
-            setShowHint(false); // Reset hint visibility when moving to the next word
+            setShowHint(false);
         } else {
-            handleClose();
+            setTestCompleted(true);
         }
     };
 
     const toggleHint = () => {
-        setShowHint(!showHint); // Toggle hint visibility
+        setShowHint(!showHint);
+    };
+
+    const handleToggleImportant = (id) => {
+        const wordIndex = selectedWords.findIndex(word => word.id === id);
+        if (wordIndex >= 0) {
+            const updatedWords = [...selectedWords];
+            updatedWords[wordIndex].important = !updatedWords[wordIndex].important;
+
+            const wordRef = ref(getDatabase(), `Voca/${auth.currentUser.uid}/${id}`);
+            update(wordRef, { important: updatedWords[wordIndex].important });
+
+            selectedWords[wordIndex] = updatedWords[wordIndex];
+        }
     };
 
     return (
-        <Dialog open={true} onClose={handleClose} fullWidth maxWidth="md">
-            <Button onClick={handleClose} color="primary">
-                <CloseIcon />
-            </Button>
-            <DialogContent>
-                <TestCard
-                    wordData={selectedWords[currentIndex]}
-                    showMeaning={showMeaning}
-                    showHint={showHint} // Pass showHint state to TestCard
-                    onAnswerChange={handleAnswerChange}
-                    answer={answers[currentIndex]}
+        <>
+            {testCompleted ? (
+                <AnswerReview
+                    words={selectedWords}
+                    answers={answers}
+                    handleToggleImportant={handleToggleImportant}
+                    handleClose={handleClose}
                 />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={toggleHint} color="primary"> {/* Button to toggle hint visibility */}
-                    {showHint ? '힌트 숨기기' : '힌트 보기'}
-                </Button>
-                <Button onClick={handleNext} color="primary">
-                    다음
-                </Button>
-            </DialogActions>
-        </Dialog>
+            ) : (
+                <Dialog
+                    open={true}
+                    onClose={handleClose}
+                    fullWidth
+                    maxWidth="md"
+                    BackdropProps={{ classes: { root: classes.backdrop } }} // Apply custom backdrop style
+                >
+                    <Button onClick={handleClose} color="primary">
+                        <CloseIcon />
+                    </Button>
+                    <DialogContent>
+                        <TestCard
+                            wordData={selectedWords[currentIndex]}
+                            showMeaning={showMeaning}
+                            showHint={showHint}
+                            onAnswerChange={handleAnswerChange}
+                            answer={answers[currentIndex]}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={toggleHint} color="primary">
+                            {showHint ? '힌트 숨기기' : '힌트 보기'}
+                        </Button>
+                        <Button onClick={handleNext} color="primary">
+                            다음
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+        </>
     );
 };
+
 
 const WordItem = ({ item, onToggleImportant, onSelect, isSelected }) => (
     <div style={{
@@ -326,7 +406,7 @@ const VocaForCard = () => {
         }
         const matchesCategory = selectedCategories.includes(word.category);
         const matchesType = (showWords && word.type === 'word') || (showSentences && word.type === 'sentence');
-        
+
         return matchesCategory && matchesType;
     });
 
@@ -365,7 +445,6 @@ const VocaForCard = () => {
                         선택 모두 해제
                     </Button>
                 </div>
-                
                 <Button onClick={() => handleStartTestVoca(true)} color="primary" variant="contained" className={classes.startButton}>
                     단어로 테스트
                 </Button>
